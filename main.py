@@ -20,6 +20,7 @@ class Item(BaseModel):
 def read_root():
     return {"Prediction API": "Welcome!"}
 
+recommend_num_items = 3
 
 @app.post("/predict_next")
 async def read_item(items:Item): #List[int] = Query(None,description="LIst of item ids as used in training")):
@@ -31,11 +32,19 @@ async def read_item(items:Item): #List[int] = Query(None,description="LIst of it
     print(items)
     items_str = ','.join(items.item_list)
     logging.debug("received items: "+items_str)
-    await log_session(items_str)
-    return {"next_item": items.item_list[-1]}
 
-async def log_session(items):
+    # get recommended item...., then its url
+    recommended_item_urls = items.item_list #[items.item_list[-1]]*recommend_num_items
+
+    # write results to log file
+    await log_session(items_str,recommended_item_urls)
+    return {"next_item": recommended_item_urls}
+
+async def log_session(items,recommended_item_urls):
     logging.debug("save to sessions_items.log")
+
+    items_str_recom = ','.join(recommended_item_urls)
     f = open("session_items.log","a")
-    f.write(items+'\n')
+    # last urls written out into log file are the recommended items
+    f.write(items+','+items_str_recom+'\n')
     f.close()

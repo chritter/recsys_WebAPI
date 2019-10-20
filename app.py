@@ -50,9 +50,9 @@ def read_session_file2():
         if i>0:
             break
     df = pd.DataFrame(session_history).T
-    df.columns = ['URL','Page']
-    df['Page'] = df.index
-    df = df[['Page','URL']]
+    df.columns = ['URL_visited','Click_order']
+    df['Click_order'] = df.index
+    df = df[['Click_order','URL_visited']]
 
     #df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/solar.csv').iloc[0].to_frame()
 
@@ -61,6 +61,7 @@ def read_session_file2():
 
     return df
 
+recommend_num_items = 2
 
 
 df= read_session_file2()
@@ -69,7 +70,7 @@ app = dash.Dash(__name__)
 
 app.layout = html.Div(children=[
 
-    html.H1(children='Web User Tracking Dashboard', style={'textAlign': 'center', 'padding': '50px',
+    html.H1(children='Web User Tracking and Recommendation Dashboard', style={'textAlign': 'center', 'padding': '50px',
                                                         'backgroundColor': '#557A95', 'color': 'white',
                                                         'font-family': 'sans-serif', 'font-size': 40, 'float': 'center',
                                                         'width': '86%'}),
@@ -80,7 +81,7 @@ app.layout = html.Div(children=[
             data=df.to_dict('records'),
         )
     ]),
-    dcc.Interval(id='interval-component', interval=20_000)
+    dcc.Interval(id='interval-component', interval=500) #in milliseconds
     ])
 
 @app.callback(
@@ -100,11 +101,24 @@ def update_table(n_intervals):
     df= read_session_file2()
     print(df)
 
+    index_items = df.index[-recommend_num_items:]
+
+    for j,idx in enumerate(index_items):
+        df.loc[idx,'Click_order'] = 'Recom '+str(j+1)
+
+    style_data_conditional=[{
+            "if": {"row_index": i},
+            "backgroundColor": "#3D9970",
+            'color': 'white'
+    } for i in index_items]
+
     return [dash_table.DataTable(
         id='table_dash',
         columns=[{"name": str(i), "id": i} for i in df.columns],
         data=df.to_dict('records'),
-        style_cell={'textAlign': 'left'})]
+        style_cell={'textAlign': 'left'},
+        style_data_conditional=style_data_conditional
+    )]
 
 
 if __name__ == '__main__':
